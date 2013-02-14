@@ -20,5 +20,6 @@ file_names.each do |file_name|
     text.gsub!(key, value)
   end
   base_name = File.basename(file_name, 'less')
-  File.open(base_name+SASS_EXTENSION, "w") { |file| file << text }
+  dir_name  = File.dirname(file_name)
+  File.open(dir_name+base_name+SASS_EXTENSION, "w") { |file| file << text }
 end
