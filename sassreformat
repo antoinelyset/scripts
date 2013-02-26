@@ -21,6 +21,7 @@ def get_files(file_name)
 end
 
 def execute_on(file_name)
+  return unless File.extname(file_name) == SASS_EXTENSION
   begin
     text = File.read(file_name)
   rescue Exception
