@@ -1,21 +1,44 @@
 #!/usr/bin/env ruby
-SASS_EXTENSION = '.formatted.scss'
+require "pathname"
+# Change it if you want a copy e.g :  .scss.copy
+SASS_EXTENSION = '.scss'
 
 VALUES   = %w{color-whiteGrey50}
 FUNCTION = "alpha-color"
+
 if ARGV.empty?
   puts "Usage : ./less2sass file1 file2 ..."
   puts "Edit VALUES (in script) to add Sass variables"
 end
 
-file_names = ARGV
-file_names.each do |file_name|
+def get_files(file_name)
+  pn = Pathname.new(file_name)
+  if pn.directory?
+    pn.children.map { |c| get_files(c) }.flatten
+  else
+    pn.realpath.to_s
+  end
+end
+
+def execute_on(file_name)
   begin
     text = File.read(file_name)
   rescue Exception
     puts "Error : can't open file : #{file_name}"
-    next
   end
+  reformat(text)
+  base_name = File.basename(file_name, SASS_EXTENSION)
+  dir_name  = File.dirname(file_name)
+  converted_file_path = "#{dir_name}/#{base_name}#{SASS_EXTENSION}"
+  begin
+    File.open(converted_file_path, "w") { |file| file << text }
+  rescue Exception
+    puts "Error : can't write file : #{converted_file_path}"
+  end
+  puts "\n== Output : #{converted_file_path} =="
+end
+
+def reformat(text)
   VALUES.each do |value|
     regex = Regexp.new("(\\S+):[ ]*([^$;]*)[ ]*\\$(#{value})[ ]*(.*);")
     text.gsub!(regex) do |match|
@@ -28,13 +51,9 @@ file_names.each do |file_name|
       start_string
     end
   end
-  base_name = File.basename(file_name, 'less')
-  dir_name  = File.dirname(file_name)
-  converted_file_path = "#{dir_name}/#{base_name}#{SASS_EXTENSION}"
-  begin
-    File.open(converted_file_path, "w") { |file| file << text }
-  rescue Exception
-    puts "Error : can't write file : #{converted_file_path}"
-  end
-  puts "\n== Output : #{converted_file_path} =="
 end
+
+file_names = ARGV
+files = []
+file_names.each { |file_name| files += get_files(file_name) }
+files.each { |file| execute_on(file) }
