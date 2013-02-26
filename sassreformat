@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+SASS_EXTENSION = '.formatted.scss'
+
+VALUES   = %w{color-whiteGrey50}
+FUNCTION = "alpha-color"
+if ARGV.empty?
+  puts "Usage : ./less2sass file1 file2 ..."
+  puts "Edit VALUES (in script) to add Sass variables"
+end
+
+file_names = ARGV
+file_names.each do |file_name|
+  begin
+    text = File.read(file_name)
+  rescue Exception
+    puts "Error : can't open file : #{file_name}"
+    next
+  end
+  VALUES.each do |value|
+    regex = Regexp.new("(\\S+):[ ]*([^$;]*)[ ]*\\$(#{value})[ ]*(.*);")
+    text.gsub!(regex) do |match|
+      start_string = "@include #{FUNCTION}(#{$1.strip}, $#{$3.strip}"
+      start_string << ", '', #{$4.strip});"          if $2.empty?  && !$4.empty?
+      start_string << ", #{$2.strip});"              if !$2.empty? && $4.empty?
+      start_string << ", #{$2.strip}, #{$4.strip});" if !$2.empty? && !$4.empty?
+      start_string << ');'                           if $2.empty?  && $4.empty?
+      puts "#{match.strip} -> #{start_string}"
+      start_string
+    end
+  end
+  base_name = File.basename(file_name, 'less')
+  dir_name  = File.dirname(file_name)
+  converted_file_path = "#{dir_name}/#{base_name}#{SASS_EXTENSION}"
+  begin
+    File.open(converted_file_path, "w") { |file| file << text }
+  rescue Exception
+    puts "Error : can't write file : #{converted_file_path}"
+  end
+  puts "\n== Output : #{converted_file_path} =="
+end

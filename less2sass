@@ -27,4 +27,5 @@ file_names.each do |file_name|
   rescue Exception
     puts "Error : can't write file : #{converted_file_path}"
   end
+  puts "\n== Output : #{converted_file_path} =="
 end
